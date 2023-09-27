@@ -2,10 +2,10 @@
 """
 $(TYPEDSIGNATURES)
 
-Convert any metabolic model to [`SBMLModel`](@ref).
+Convert any metabolic model to [`SBMLFBCModel`](@ref).
 """
-function Base.convert(::Type{SBMLModel}, mm::MetabolicModel)
-    if typeof(mm) == SBMLModel
+function Base.convert(::Type{SBMLFBCModel}, mm::A.AbstractFBCModel)
+    if typeof(mm) == SBMLFBCModel
         return mm
     end
 
@@ -20,7 +20,7 @@ function Base.convert(::Type{SBMLModel}, mm::MetabolicModel)
     rxnid(x) = startswith(x, "R_") ? x : "R_$x"
     gprid(x) = startswith(x, "G_") ? x : "G_$x"
 
-    return SBMLModel(
+    return SBMLFBCModel(
         SBML.Model(
             compartments = Dict(
                 comp => SBML.Compartment(constant = true) for comp in compss
@@ -29,7 +29,7 @@ function Base.convert(::Type{SBMLModel}, mm::MetabolicModel)
                 metid(mid) => SBML.Species(
                     name = metabolite_name(mm, mid),
                     compartment = _default("compartment", comps[mi]),
-                    formula = _maybemap(_unparse_formula, metabolite_formula(mm, mid)),
+                    formula = maybemap(_unparse_formula, metabolite_formula(mm, mid)),
                     charge = metabolite_charge(mm, mid),
                     constant = false,
                     boundary_condition = false,
@@ -65,8 +65,8 @@ function Base.convert(::Type{SBMLModel}, mm::MetabolicModel)
                     ),
                     lower_bound = "LOWER_BOUND",
                     upper_bound = "UPPER_BOUND",
-                    gene_product_association = _maybemap(
-                        x -> _unparse_grr(SBML.GeneProductAssociation, x),
+                    gene_product_association = maybemap(
+                        unparse_grr,
                         reaction_gene_association(mm, rid),
                     ),
                     reversible = true,

@@ -1,15 +1,7 @@
 
-"""
-$(TYPEDSIGNATURES)
+A.load(::Type{SBMLFBCModel}, file_name::String)::SBMLFBCModel =
+    SBMLFBCModel(SBML.readSBML(file_name))
 
-Load and return a SBML XML model in `file_name`.
-"""
-load(::Type{SBMLModel}, file_name::String)::SBMLModel =
-    SBMLModel(SBML.readSBML(file_name))
+A.save(model::SBMLFBCModel, file_name::String) = SBML.writeSBML(m.sbml, file_name)
 
-"""
-$(TYPEDSIGNATURES)
-
-Write a given SBML model to `file_name`.
-"""
-save(model::SBMLModel, file_name::String) = SBML.writeSBML(m.sbml, file_name)
+A.filename_extensions(::Type{SBMLFBCModel}) = ["xml"]

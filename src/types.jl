@@ -7,7 +7,7 @@ SBML to any other model format.
 # Fields
 $(TYPEDFIELDS)
 """
-struct SBMLModel <: MetabolicModel
+struct SBMLFBCModel <: A.AbstractFBCModel
     sbml::SBML.Model
     reaction_ids::Vector{String}
     reaction_idx::Dict{String,Int}
@@ -22,12 +22,12 @@ $(TYPEDEF)
 
 Construct the SBML model and add the necessary cached indexes, possibly choosing an active objective.
 """
-function SBMLModel(sbml::SBML.Model, active_objective::String = "")
+function SBMLFBCModel(sbml::SBML.Model, active_objective::String = "")
     rxns = sort(collect(keys(sbml.reactions)))
     mets = sort(collect(keys(sbml.species)))
     genes = sort(collect(keys(sbml.gene_products)))
 
-    SBMLModel(
+    SBMLFBCModel(
         sbml,
         rxns,
         Dict(rxns .=> eachindex(rxns)),
@@ -37,3 +37,5 @@ function SBMLModel(sbml::SBML.Model, active_objective::String = "")
         active_objective,
     )
 end
+
+const Maybe = A.Maybe
