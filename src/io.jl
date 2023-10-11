@@ -4,8 +4,7 @@ $(TYPEDSIGNATURES)
 
 Load and return a SBML XML model in `file_name`.
 """
-load(::Type{SBMLModel}, file_name::String)::SBMLModel =
-    SBMLModel(SBML.readSBML(file_name))
+load(::Type{SBMLModel}, file_name::String)::SBMLModel = SBMLModel(SBML.readSBML(file_name))
 
 """
 $(TYPEDSIGNATURES)

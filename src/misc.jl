@@ -116,5 +116,5 @@ end
 sbml_import_notes(notes::Maybe{String})::Notes =
     isnothing(notes) ? Notes() : Notes("" => [notes])
 
-sbml_export_notes(notes::Notes)::Maybe{String}
+sbml_export_notes(notes::Notes)::Maybe{String} =
     isempty(notes) ? nothing : error("Data loss: notes can not exported to SBML")

@@ -197,7 +197,8 @@ $(TYPEDSIGNATURES)
 
 Get the compartment of a chosen metabolite from [`SBMLModel`](@ref).
 """
-A.metabolite_compartment(model::SBMLModel, mid::String) = model.sbml.species[mid].compartment
+A.metabolite_compartment(model::SBMLModel, mid::String) =
+    model.sbml.species[mid].compartment
 
 """
 $(TYPEDSIGNATURES)
