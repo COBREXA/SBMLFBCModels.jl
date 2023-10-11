@@ -1,37 +1,10 @@
 
-"""
-$(TYPEDSIGNATURES)
-
-Get reactions from a [`SBMLModel`](@ref).
-"""
 A.reactions(model::SBMLModel)::Vector{String} = model.reaction_ids
-
-"""
-$(TYPEDSIGNATURES)
-
-Get metabolites from a [`SBMLModel`](@ref).
-"""
 A.metabolites(model::SBMLModel)::Vector{String} = model.metabolite_ids
 
-"""
-$(TYPEDSIGNATURES)
-
-Efficient counting of reactions in [`SBMLModel`](@ref).
-"""
 A.n_reactions(model::SBMLModel)::Int = length(model.reaction_ids)
-
-"""
-$(TYPEDSIGNATURES)
-
-Efficient counting of metabolites in [`SBMLModel`](@ref).
-"""
 A.n_metabolites(model::SBMLModel)::Int = length(model.metabolite_ids)
 
-"""
-$(TYPEDSIGNATURES)
-
-Recreate the stoichiometry matrix from the [`SBMLModel`](@ref).
-"""
 function A.stoichiometry(model::SBMLModel)::SparseMat
 
     # find the vector size for preallocation
@@ -138,7 +111,10 @@ A.balance(model::SBMLModel)::SparseVec = spzeros(n_metabolites(model))
 """
 $(TYPEDSIGNATURES)
 
-Objective of the [`SBMLModel`](@ref).
+Objective of the [`SBMLModel`](@ref). Notably, SBML may have multiple stored
+objectives; this function primarily takes the one specified by the
+`active_objective`. If no objectives are specified, the old-style objective
+specification via `OBJECTIVE_COEFFICIENT` is tried too.
 """
 function A.objective(model::SBMLModel)::SparseVec
     res = spzeros(n_reactions(model))
@@ -162,57 +138,33 @@ function A.objective(model::SBMLModel)::SparseVec
     return res
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Get genes of a [`SBMLModel`](@ref).
-"""
 A.genes(model::SBMLModel)::Vector{String} = model.gene_ids
-
-"""
-$(TYPEDSIGNATURES)
-
-Get number of genes in [`SBMLModel`](@ref).
-"""
 A.n_genes(model::SBMLModel)::Int = length(model.gene_ids)
-
-"""
-$(TYPEDSIGNATURES)
-
-Retrieve the [`GeneAssociation`](@ref) from [`SBMLModel`](@ref).
-"""
-A.reaction_gene_association(model::SBMLModel, rid::String)::Maybe{GeneAssociation} =
+A.reaction_gene_association_dnf(
+    model::SBMLModel,
+    rid::String,
+)::Maybe{A.GeneAssociationDNF} =
     maybemap(parse_grr, model.sbml.reactions[rid].gene_product_association)
 
-"""
-$(TYPEDSIGNATURES)
+function A.reaction_gene_products_available(
+    model::SBMLModel,
+    rid::String,
+    available::Function,
+)
+    ev(x::SBML.GPAAnd) = all(ev, x.terms)
+    ev(x::SBML.GPAOr) = any(ev, x.terms)
+    ev(x::SBML.GPARef) = available(x.gene_product)
 
-Get [`MetaboliteFormula`](@ref) from a chosen metabolite from [`SBMLModel`](@ref).
-"""
-A.metabolite_formula(model::SBMLModel, mid::String)::Maybe{MetaboliteFormula} =
+    maybemap(ev, model.reaction[rid].gene_product_association)
+end
+
+A.metabolite_formula(model::SBMLModel, mid::String)::Maybe{A.MetaboliteFormula} =
     maybemap(parse_formula, model.sbml.species[mid].formula)
-
-"""
-$(TYPEDSIGNATURES)
-
-Get the compartment of a chosen metabolite from [`SBMLModel`](@ref).
-"""
 A.metabolite_compartment(model::SBMLModel, mid::String) =
     model.sbml.species[mid].compartment
-
-"""
-$(TYPEDSIGNATURES)
-
-Get charge of a chosen metabolite from [`SBMLModel`](@ref).
-"""
 A.metabolite_charge(model::SBMLModel, mid::String)::Maybe{Int} =
     model.sbml.species[mid].charge
 
-"""
-$(TYPEDSIGNATURES)
-
-Return the stoichiometry of reaction with ID `rid`.
-"""
 function A.reaction_stoichiometry(m::SBMLModel, rid::String)::Dict{String,Float64}
     s = Dict{String,Float64}()
     default1(x) = isnothing(x) ? 1 : x
@@ -225,73 +177,20 @@ function A.reaction_stoichiometry(m::SBMLModel, rid::String)::Dict{String,Float6
     return s
 end
 
-"""
-$(TYPEDSIGNATURES)
-
-Return the name of reaction with ID `rid`.
-"""
 A.reaction_name(model::SBMLModel, rid::String) = model.sbml.reactions[rid].name
-
-"""
-$(TYPEDSIGNATURES)
-
-Return the name of metabolite with ID `mid`.
-"""
 A.metabolite_name(model::SBMLModel, mid::String) = model.sbml.species[mid].name
-
-"""
-$(TYPEDSIGNATURES)
-
-Return the name of gene with ID `gid`.
-"""
 A.gene_name(model::SBMLModel, gid::String) = model.sbml.gene_products[gid].name
-
-"""
-$(TYPEDSIGNATURES)
-
-Return the annotations of reaction with ID `rid`.
-"""
 A.reaction_annotations(model::SBMLModel, rid::String) =
     sbml_import_cvterms(model.sbml.reactions[rid].sbo, model.sbml.reactions[rid].cv_terms)
-
-"""
-$(TYPEDSIGNATURES)
-
-Return the annotations of metabolite with ID `mid`.
-"""
 A.metabolite_annotations(model::SBMLModel, mid::String) =
     sbml_import_cvterms(model.sbml.species[mid].sbo, model.sbml.species[mid].cv_terms)
-
-"""
-$(TYPEDSIGNATURES)
-
-Return the annotations of gene with ID `gid`.
-"""
 A.gene_annotations(model::SBMLModel, gid::String) = sbml_import_cvterms(
     model.sbml.gene_products[gid].sbo,
     model.sbml.gene_products[gid].cv_terms,
 )
-
-"""
-$(TYPEDSIGNATURES)
-
-Return the notes about reaction with ID `rid`.
-"""
 A.reaction_notes(model::SBMLModel, rid::String) =
     sbml_import_notes(model.sbml.reactions[rid].notes)
-
-"""
-$(TYPEDSIGNATURES)
-
-Return the notes about metabolite with ID `mid`.
-"""
 A.metabolite_notes(model::SBMLModel, mid::String) =
     sbml_import_notes(model.sbml.species[mid].notes)
-
-"""
-$(TYPEDSIGNATURES)
-
-Return the notes about gene with ID `gid`.
-"""
 A.gene_notes(model::SBMLModel, gid::String) =
     sbml_import_notes(model.sbml.gene_products[gid].notes)

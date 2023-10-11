@@ -2,20 +2,21 @@
 """
 $(TYPEDSIGNATURES)
 
-Convert any metabolic model to [`SBMLModel`](@ref).
+Convert any FBC model to [`SBMLModel`](@ref).
 """
-function Base.convert(::Type{SBMLModel}, mm::MetabolicModel)
+function Base.convert(::Type{SBMLModel}, mm::A.AbstractFBCModel)
     if typeof(mm) == SBMLModel
         return mm
     end
 
-    mets = metabolites(mm)
-    rxns = reactions(mm)
-    stoi = stoichiometry(mm)
-    (lbs, ubs) = bounds(mm)
-    comps = _default.("compartment", metabolite_compartment.(Ref(mm), mets))
+    mets = A.metabolites(mm)
+    rxns = A.reactions(mm)
+    stoi = A.stoichiometry(mm)
+    (lbs, ubs) = A.bounds(mm)
+    comps = _default.("compartment", A.metabolite_compartment.(Ref(mm), mets))
     compss = Set(comps)
 
+    #TODO re-think this
     metid(x) = startswith(x, "M_") ? x : "M_$x"
     rxnid(x) = startswith(x, "R_") ? x : "R_$x"
     gprid(x) = startswith(x, "G_") ? x : "G_$x"
@@ -27,22 +28,22 @@ function Base.convert(::Type{SBMLModel}, mm::MetabolicModel)
             ),
             species = Dict(
                 metid(mid) => SBML.Species(
-                    name = metabolite_name(mm, mid),
+                    name = A.metabolite_name(mm, mid),
                     compartment = _default("compartment", comps[mi]),
-                    formula = _maybemap(_unparse_formula, metabolite_formula(mm, mid)),
-                    charge = metabolite_charge(mm, mid),
+                    formula = _maybemap(_unparse_formula, A.metabolite_formula(mm, mid)),
+                    charge = A.metabolite_charge(mm, mid),
                     constant = false,
                     boundary_condition = false,
                     only_substance_units = false,
-                    sbo = _sbml_export_sbo(metabolite_annotations(mm, mid)),
-                    notes = _sbml_export_notes(metabolite_notes(mm, mid)),
+                    sbo = _sbml_export_sbo(A.metabolite_annotations(mm, mid)),
+                    notes = _sbml_export_notes(A.metabolite_notes(mm, mid)),
                     metaid = metid(mid),
-                    cv_terms = _sbml_export_cvterms(metabolite_annotations(mm, mid)),
+                    cv_terms = _sbml_export_cvterms(A.metabolite_annotations(mm, mid)),
                 ) for (mi, mid) in enumerate(mets)
             ),
             reactions = Dict(
                 rxnid(rid) => SBML.Reaction(
-                    name = reaction_name(mm, rid),
+                    name = A.reaction_name(mm, rid),
                     reactants = [
                         SBML.SpeciesReference(
                             species = metid(mets[i]),
@@ -67,30 +68,30 @@ function Base.convert(::Type{SBMLModel}, mm::MetabolicModel)
                     upper_bound = "UPPER_BOUND",
                     gene_product_association = _maybemap(
                         x -> _unparse_grr(SBML.GeneProductAssociation, x),
-                        reaction_gene_association(mm, rid),
+                        A.reaction_gene_association_dnf(mm, rid),
                     ),
                     reversible = true,
-                    sbo = _sbml_export_sbo(reaction_annotations(mm, rid)),
-                    notes = _sbml_export_notes(reaction_notes(mm, rid)),
+                    sbo = _sbml_export_sbo(A.reaction_annotations(mm, rid)),
+                    notes = _sbml_export_notes(A.reaction_notes(mm, rid)),
                     metaid = rxnid(rid),
-                    cv_terms = _sbml_export_cvterms(reaction_annotations(mm, rid)),
+                    cv_terms = _sbml_export_cvterms(A.reaction_annotations(mm, rid)),
                 ) for (ri, rid) in enumerate(rxns)
             ),
             gene_products = Dict(
                 gprid(gid) => SBML.GeneProduct(
                     label = gid,
                     name = gene_name(mm, gid),
-                    sbo = _sbml_export_sbo(gene_annotations(mm, gid)),
-                    notes = _sbml_export_notes(gene_notes(mm, gid)),
+                    sbo = _sbml_export_sbo(A.gene_annotations(mm, gid)),
+                    notes = _sbml_export_notes(A.gene_notes(mm, gid)),
                     metaid = gprid(gid),
-                    cv_terms = _sbml_export_cvterms(gene_annotations(mm, gid)),
+                    cv_terms = _sbml_export_cvterms(A.gene_annotations(mm, gid)),
                 ) for gid in genes(mm)
             ),
             active_objective = "objective",
             objectives = Dict(
                 "objective" => SBML.Objective(
                     "maximize",
-                    Dict(rid => oc for (rid, oc) in zip(rxns, objective(mm)) if oc != 0),
+                    Dict(rid => oc for (rid, oc) in zip(rxns, A.objective(mm)) if oc != 0),
                 ),
             ),
         ),

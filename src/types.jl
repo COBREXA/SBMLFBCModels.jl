@@ -1,3 +1,6 @@
+
+const Maybe = A.Maybe
+
 """
 $(TYPEDEF)
 
@@ -7,7 +10,7 @@ SBML to any other model format.
 # Fields
 $(TYPEDFIELDS)
 """
-struct SBMLModel <: MetabolicModel
+struct SBMLModel <: A.AbstractFBCModel
     sbml::SBML.Model
     reaction_ids::Vector{String}
     reaction_idx::Dict{String,Int}

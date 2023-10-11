@@ -1,4 +1,9 @@
+"""
+$(README)
+"""
 module SBMLFBCModels
+
+using DocStringExtensions
 
 import AbstractFBCModels as A
 import SBML
