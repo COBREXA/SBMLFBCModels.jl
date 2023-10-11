@@ -1,11 +1,13 @@
 
+import SparseArrays: spzeros, sparse
+
 A.reactions(model::SBMLModel)::Vector{String} = model.reaction_ids
 A.metabolites(model::SBMLModel)::Vector{String} = model.metabolite_ids
 
 A.n_reactions(model::SBMLModel)::Int = length(model.reaction_ids)
 A.n_metabolites(model::SBMLModel)::Int = length(model.metabolite_ids)
 
-function A.stoichiometry(model::SBMLModel)::SparseMat
+function A.stoichiometry(model::SBMLModel)::A.SparseMat
 
     # find the vector size for preallocation
     nnz = 0
@@ -106,7 +108,7 @@ $(TYPEDSIGNATURES)
 
 Balance vector of a [`SBMLModel`](@ref). This is always zero.
 """
-A.balance(model::SBMLModel)::SparseVec = spzeros(n_metabolites(model))
+A.balance(model::SBMLModel)::A.SparseVec = spzeros(Float64, n_metabolites(model))
 
 """
 $(TYPEDSIGNATURES)
@@ -116,7 +118,7 @@ objectives; this function primarily takes the one specified by the
 `active_objective`. If no objectives are specified, the old-style objective
 specification via `OBJECTIVE_COEFFICIENT` is tried too.
 """
-function A.objective(model::SBMLModel)::SparseVec
+function A.objective(model::SBMLModel)::A.SparseVec
     res = spzeros(n_reactions(model))
 
     objective = get(model.sbml.objectives, model.active_objective, nothing)
