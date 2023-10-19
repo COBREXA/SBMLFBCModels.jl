@@ -41,7 +41,7 @@ function A.stoichiometry(model::SBMLModel)::A.SparseMat
             push!(Vals, isnothing(sr.stoichiometry) ? 1.0 : sr.stoichiometry)
         end
     end
-    return sparse(Rows, Cols, Vals, n_metabolites(model), n_reactions(model))
+    return sparse(Rows, Cols, Vals, A.n_metabolites(model), A.n_reactions(model))
 end
 
 """
@@ -108,7 +108,7 @@ $(TYPEDSIGNATURES)
 
 Balance vector of a [`SBMLModel`](@ref). This is always zero.
 """
-A.balance(model::SBMLModel)::A.SparseVec = spzeros(Float64, n_metabolites(model))
+A.balance(model::SBMLModel)::A.SparseVec = spzeros(Float64, A.n_metabolites(model))
 
 """
 $(TYPEDSIGNATURES)
@@ -119,7 +119,7 @@ objectives; this function primarily takes the one specified by the
 specification via `OBJECTIVE_COEFFICIENT` is tried too.
 """
 function A.objective(model::SBMLModel)::A.SparseVec
-    res = spzeros(n_reactions(model))
+    res = spzeros(A.n_reactions(model))
 
     objective = get(model.sbml.objectives, model.active_objective, nothing)
     if isnothing(objective) && length(model.sbml.objectives) == 1
