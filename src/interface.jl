@@ -74,14 +74,12 @@ function A.bounds(model::SBMLFBCModel)::Tuple{Vector{Float64},Vector{Float64}}
         unit = SBML.mayfirst(param.units, "")
         if unit != ""
             if common_unit != ""
-                if unit != common_unit
-                    throw(
-                        DomainError(
-                            unit,
-                            "The SBML file uses multiple units; loading would need conversion",
-                        ),
-                    )
-                end
+                unit == common_unit || throw(
+                    DomainError(
+                        unit,
+                        "The SBML file uses multiple units; loading would need conversion",
+                    ),
+                )
             else
                 common_unit = unit
             end
@@ -152,36 +150,29 @@ Directly evaluates the `SBML.GeneProductAssociation` boolean formula for the
 reaction.
 """
 function A.reaction_gene_products_available(
-    model::SBMLModel,
+    model::SBMLFBCModel,
     rid::String,
     available::Function,
-)
+)::Maybe{Bool}
     ev(x::SBML.GPAAnd) = all(ev, x.terms)
     ev(x::SBML.GPAOr) = any(ev, x.terms)
     ev(x::SBML.GPARef) = available(x.gene_product)
 
-    maybemap(ev, model.reaction[rid].gene_product_association)
+    maybemap(ev, model.sbml.reactions[rid].gene_product_association)
 end
 
 """
 $(TYPEDSIGNATURES)
 
-SBML does not store DNF directly. See
-[`converted_reaction_gene_association_dnf`](@ref) for details.
+SBML does not store gene associations in DNF directly; this function converts
+the Boolean formula stored in SBML to DNF.  That is usually safe to do, but the
+complexity is exponential in the worst case, which may easily cause very long
+processing with specific models.
+
+Unless absolutely necessary, use [`reaction_gene_products_available`](@ref)
+instead.
 """
 A.reaction_gene_association_dnf(
-    model::SBMLFBCModel,
-    rid::String,
-)::Maybe{A.GeneAssociationDNF} = nothing
-
-"""
-$(TYPEDSIGNATURES)
-
-Convert the SBML gene product association formula into DNF. Generally safe to
-use, but the complexity is exponential in the worst case, which is why this is
-given a separate non-default function.
-"""
-converted_reaction_gene_association_dnf(
     model::SBMLFBCModel,
     rid::String,
 )::Maybe{A.GeneAssociationDNF} =

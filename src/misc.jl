@@ -124,7 +124,12 @@ end
 function sbml_export_sbo(annotations::A.Annotations)::Maybe{String}
     haskey(annotations, "sbo") || return nothing
     if length(annotations["sbo"]) != 1
-        error("Data loss: SBO term is not unique for SBML export: $(annotations["sbo"])")
+        throw(
+            DomainError(
+                annotations["sbo"],
+                "data loss: SBO term is not unique for SBML export",
+            ),
+        )
     end
     return annotations["sbo"][1]
 end
@@ -133,4 +138,6 @@ sbml_import_notes(notes::Maybe{String})::A.Notes =
     isnothing(notes) ? A.Notes() : A.Notes("" => [notes])
 
 sbml_export_notes(notes::A.Notes)::Maybe{String} =
-    isempty(notes) ? nothing : error("Data loss: notes can not exported to SBML")
+    isempty(notes) ? nothing :
+    collect(keys(notes)) == [""] && length(notes[""]) == 1 ? notes[""][1] :
+    throw(DomainError(notes, "data loss: structured notes can not exported to SBML"))
