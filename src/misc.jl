@@ -51,12 +51,7 @@ function parse_grr(gpa::SBML.GeneProductAssociation)::A.GeneAssociationDNF
     dnf(x::SBML.GPARef) = [[x.gene_product]]
     dnf(x::SBML.GPAOr) = sortunique(vcat(dnf.(x.terms)...))
     dnf(x::SBML.GPAAnd) = fold_and(dnf.(x.terms))
-    dnf(x) = throw(
-        DomainError(
-            x,
-            "unsupported gene product association contents of type $(typeof(x))",
-        ),
-    )
+
     return dnf(gpa)
 end
 
