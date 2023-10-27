@@ -1,0 +1,6 @@
+/docs/build/
+Manifest.toml
+
+*.cov
+.*.swp
+.vscode

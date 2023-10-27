@@ -20,6 +20,7 @@ function Base.convert(::Type{SBMLFBCModel}, mm::A.AbstractFBCModel)
     comps = default.("compartment", A.metabolite_compartment.(Ref(mm), mets))
     compss = Set(comps)
 
+    #TODO re-think this
     metid(x) = startswith(x, "M_") ? x : "M_$x"
     rxnid(x) = startswith(x, "R_") ? x : "R_$x"
     gprid(x) = startswith(x, "G_") ? x : "G_$x"

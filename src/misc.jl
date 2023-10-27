@@ -2,7 +2,7 @@
 """
 $(TYPEDSIGNATURES)
 
-
+A helper for handling `nothing`s.
 """
 maybemap(fn, x) = isnothing(x) ? nothing : fn(x)
 
@@ -34,8 +34,7 @@ end
 $(TYPEDSIGNATURES)
 
 Parse `SBML.GeneProductAssociation` structure and convert it to a strictly
-positive DNF [`GeneAssociation`](@ref). Negation (`SBML.GPANot`) is not
-supported.
+positive DNF. Negation (`SBML.GPANot`) is not supported.
 """
 function parse_grr(gpa::SBML.GeneProductAssociation)::A.GeneAssociationDNF
 
@@ -64,7 +63,7 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Convert a `GeneAssociationDNF` to the corresponding `SBML.jl` structure.
+Convert a gene association DNF to the corresponding `SBML.jl` structure.
 """
 function unparse_grr(x::A.GeneAssociationDNF)::SBML.GeneProductAssociation
     SBML.GPAOr([SBML.GPAAnd([SBML.GPARef(j) for j in i]) for i in x])

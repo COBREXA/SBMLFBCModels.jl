@@ -110,7 +110,7 @@ $(TYPEDSIGNATURES)
 
 Balance vector of a [`SBMLFBCModel`](@ref). For SBML this is always zero.
 """
-A.balance(model::SBMLFBCModel)::A.SparseVec = spzeros(A.n_metabolites(model))
+A.balance(model::SBMLFBCModel)::A.SparseVec = spzeros(Float64, A.n_metabolites(model))
 
 """
 $(TYPEDSIGNATURES)
@@ -120,7 +120,7 @@ the active objective, or defaults to an unique one, or fallbacks to the
 old-style `OBJECTIVE_COEFFICIENT`-parameter-specified objectives.
 """
 function A.objective(model::SBMLFBCModel)::A.SparseVec
-    res = spzeros(A.n_reactions(model))
+    res = spzeros(Float64, A.n_reactions(model))
 
     objective = get(model.sbml.objectives, model.active_objective, nothing)
     if isnothing(objective) && length(model.sbml.objectives) == 1
@@ -151,11 +151,17 @@ $(TYPEDSIGNATURES)
 Directly evaluates the `SBML.GeneProductAssociation` boolean formula for the
 reaction.
 """
-A.reaction_gene_products_available(
-    model::SBMLFBCModel,
+function A.reaction_gene_products_available(
+    model::SBMLModel,
     rid::String,
-    ::Function,
-)::Maybe{Bool} = nothing # missing #TODO evaluate model.sbml.reactions[rid].gene_product_association
+    available::Function,
+)
+    ev(x::SBML.GPAAnd) = all(ev, x.terms)
+    ev(x::SBML.GPAOr) = any(ev, x.terms)
+    ev(x::SBML.GPARef) = available(x.gene_product)
+
+    maybemap(ev, model.reaction[rid].gene_product_association)
+end
 
 """
 $(TYPEDSIGNATURES)
