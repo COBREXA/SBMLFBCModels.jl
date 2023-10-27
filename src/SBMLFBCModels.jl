@@ -7,6 +7,7 @@ using DocStringExtensions
 
 import AbstractFBCModels as A
 import SBML
+import SparseArrays
 
 include("types.jl")
 include("interface.jl")

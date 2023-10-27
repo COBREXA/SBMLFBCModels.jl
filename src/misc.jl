@@ -70,6 +70,31 @@ function unparse_grr(x::A.GeneAssociationDNF)::SBML.GeneProductAssociation
     SBML.GPAOr([SBML.GPAAnd([SBML.GPARef(j) for j in i]) for i in x])
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Parse a formula in format `C2H6O` into a `MetaboliteFormula`, which is
+basically a dictionary of atom counts in the molecule.
+"""
+function parse_formula(f::String)::A.MetaboliteFormula
+    res = Dict{String,Int}()
+    pattern = @r_str "([A-Z][a-z]*)([1-9][0-9]*)?"
+
+    for m in eachmatch(pattern, f)
+        res[m.captures[1]] = isnothing(m.captures[2]) ? 1 : parse(Int, m.captures[2])
+    end
+
+    return res
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Format `MetaboliteFormula` to `String`.
+"""
+function unparse_formula(f::A.MetaboliteFormula)::String
+    return join(["$elem$n" for (elem, n) in f])
+end
 
 function parse_sbml_identifiers_org_uri(uri::String)::Tuple{String,String}
     m = match(r"^http://identifiers.org/([^/]+)/(.*)$", uri)

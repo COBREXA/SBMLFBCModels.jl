@@ -1,4 +1,6 @@
 
+import SparseArrays: sparse, spzeros
+
 A.reactions(model::SBMLFBCModel)::Vector{String} = model.reaction_ids
 
 A.metabolites(model::SBMLFBCModel)::Vector{String} = model.metabolite_ids
@@ -7,7 +9,7 @@ A.n_reactions(model::SBMLFBCModel)::Int = length(model.reaction_ids)
 
 A.n_metabolites(model::SBMLFBCModel)::Int = length(model.metabolite_ids)
 
-function A.stoichiometry(model::SBMLFBCModel)::SparseMat
+function A.stoichiometry(model::SBMLFBCModel)::A.SparseMat
 
     # find the vector size for preallocation
     nnz = 0
@@ -41,7 +43,7 @@ function A.stoichiometry(model::SBMLFBCModel)::SparseMat
             push!(Vals, isnothing(sr.stoichiometry) ? 1.0 : sr.stoichiometry)
         end
     end
-    return sparse(Rows, Cols, Vals, n_metabolites(model), n_reactions(model))
+    return sparse(Rows, Cols, Vals, A.n_metabolites(model), A.n_reactions(model))
 end
 
 """
@@ -108,7 +110,7 @@ $(TYPEDSIGNATURES)
 
 Balance vector of a [`SBMLFBCModel`](@ref). For SBML this is always zero.
 """
-A.balance(model::SBMLFBCModel)::SparseVec = spzeros(n_metabolites(model))
+A.balance(model::SBMLFBCModel)::A.SparseVec = spzeros(A.n_metabolites(model))
 
 """
 $(TYPEDSIGNATURES)
@@ -117,8 +119,8 @@ Objective of the [`SBMLFBCModel`](@ref). Tries to reconstruct the model from
 the active objective, or defaults to an unique one, or fallbacks to the
 old-style `OBJECTIVE_COEFFICIENT`-parameter-specified objectives.
 """
-function A.objective(model::SBMLFBCModel)::SparseVec
-    res = spzeros(n_reactions(model))
+function A.objective(model::SBMLFBCModel)::A.SparseVec
+    res = spzeros(A.n_reactions(model))
 
     objective = get(model.sbml.objectives, model.active_objective, nothing)
     if isnothing(objective) && length(model.sbml.objectives) == 1
@@ -153,16 +155,34 @@ A.reaction_gene_products_available(
     model::SBMLFBCModel,
     rid::String,
     ::Function,
-)::Maybe{Bool} = missing #TODO evaluate model.sbml.reactions[rid].gene_product_association
+)::Maybe{Bool} = nothing # missing #TODO evaluate model.sbml.reactions[rid].gene_product_association
 
+"""
+$(TYPEDSIGNATURES)
+
+SBML does not store DNF directly. See
+[`converted_reaction_gene_association_dnf`](@ref) for details.
+"""
 A.reaction_gene_association_dnf(
     model::SBMLFBCModel,
     rid::String,
-)::Maybe{GeneAssociationDNF} =
+)::Maybe{A.GeneAssociationDNF} = nothing
+
+"""
+$(TYPEDSIGNATURES)
+
+Convert the SBML gene product association formula into DNF. Generally safe to
+use, but the complexity is exponential in the worst case, which is why this is
+given a separate non-default function.
+"""
+converted_reaction_gene_association_dnf(
+    model::SBMLFBCModel,
+    rid::String,
+)::Maybe{A.GeneAssociationDNF} =
     maybemap(parse_grr, model.sbml.reactions[rid].gene_product_association)
 
 
-A.metabolite_formula(model::SBMLFBCModel, mid::String)::Maybe{MetaboliteFormula} =
+A.metabolite_formula(model::SBMLFBCModel, mid::String)::Maybe{A.MetaboliteFormula} =
     maybemap(parse_formula, model.sbml.species[mid].formula)
 
 A.metabolite_compartment(model::SBMLFBCModel, mid::String) =
