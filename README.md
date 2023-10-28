@@ -2,7 +2,7 @@
 # SBMLFBCModels.jl -- Import and export of SBML flux-balanced constrained models
 
 | Build status |
-|:---:|:---:|
+|:---:|
 | [![CI](https://github.com/COBREXA/SBMLFBCModels.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/COBREXA/SBMLFBCModels.jl/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/COBREXA/SBMLFBCModels.jl/branch/master/graph/badge.svg?token=A2ui7exGIH)](https://codecov.io/gh/COBREXA/SBMLFBCModels.jl) |
 
 Package `SBMLFBCModels.jl` defines an instance of the `AbstractFBCModel`
