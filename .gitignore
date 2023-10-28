@@ -3,4 +3,8 @@ Manifest.toml
 
 *.cov
 .*.swp
+
 .vscode
+*.code-workspace
+
+/test/test-models
