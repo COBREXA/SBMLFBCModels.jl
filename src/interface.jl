@@ -1,13 +1,15 @@
 
-import SparseArrays: spzeros, sparse
+import SparseArrays: sparse, spzeros
 
-A.reactions(model::SBMLModel)::Vector{String} = model.reaction_ids
-A.metabolites(model::SBMLModel)::Vector{String} = model.metabolite_ids
+A.reactions(model::SBMLFBCModel)::Vector{String} = model.reaction_ids
 
-A.n_reactions(model::SBMLModel)::Int = length(model.reaction_ids)
-A.n_metabolites(model::SBMLModel)::Int = length(model.metabolite_ids)
+A.metabolites(model::SBMLFBCModel)::Vector{String} = model.metabolite_ids
 
-function A.stoichiometry(model::SBMLModel)::A.SparseMat
+A.n_reactions(model::SBMLFBCModel)::Int = length(model.reaction_ids)
+
+A.n_metabolites(model::SBMLFBCModel)::Int = length(model.metabolite_ids)
+
+function A.stoichiometry(model::SBMLFBCModel)::A.SparseMat
 
     # find the vector size for preallocation
     nnz = 0
@@ -47,10 +49,10 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Get the lower and upper flux bounds of model [`SBMLModel`](@ref). Throws `DomainError` in
-case if the SBML contains mismatching units.
+Get the lower and upper flux bounds of model [`SBMLFBCModel`](@ref). This
+throws a `DomainError` in case if the SBML contains mismatching units.
 """
-function A.bounds(model::SBMLModel)::Tuple{Vector{Float64},Vector{Float64}}
+function A.bounds(model::SBMLFBCModel)::Tuple{Vector{Float64},Vector{Float64}}
     # There are multiple ways in SBML to specify a lower/upper bound. There are
     # the "global" model bounds that we completely ignore now because no one
     # uses them. In reaction, you can specify the bounds using "LOWER_BOUND"
@@ -72,14 +74,12 @@ function A.bounds(model::SBMLModel)::Tuple{Vector{Float64},Vector{Float64}}
         unit = SBML.mayfirst(param.units, "")
         if unit != ""
             if common_unit != ""
-                if unit != common_unit
-                    throw(
-                        DomainError(
-                            unit,
-                            "The SBML file uses multiple units; loading would need conversion",
-                        ),
-                    )
-                end
+                unit == common_unit || throw(
+                    DomainError(
+                        unit,
+                        "The SBML file uses multiple units; loading would need conversion",
+                    ),
+                )
             else
                 common_unit = unit
             end
@@ -106,20 +106,19 @@ end
 """
 $(TYPEDSIGNATURES)
 
-Balance vector of a [`SBMLModel`](@ref). This is always zero.
+Balance vector of a [`SBMLFBCModel`](@ref). For SBML this is always zero.
 """
-A.balance(model::SBMLModel)::A.SparseVec = spzeros(Float64, A.n_metabolites(model))
+A.balance(model::SBMLFBCModel)::A.SparseVec = spzeros(Float64, A.n_metabolites(model))
 
 """
 $(TYPEDSIGNATURES)
 
-Objective of the [`SBMLModel`](@ref). Notably, SBML may have multiple stored
-objectives; this function primarily takes the one specified by the
-`active_objective`. If no objectives are specified, the old-style objective
-specification via `OBJECTIVE_COEFFICIENT` is tried too.
+Objective of the [`SBMLFBCModel`](@ref). Tries to reconstruct the model from
+the active objective, or defaults to an unique one, or fallbacks to the
+old-style `OBJECTIVE_COEFFICIENT`-parameter-specified objectives.
 """
-function A.objective(model::SBMLModel)::A.SparseVec
-    res = spzeros(A.n_reactions(model))
+function A.objective(model::SBMLFBCModel)::A.SparseVec
+    res = spzeros(Float64, A.n_reactions(model))
 
     objective = get(model.sbml.objectives, model.active_objective, nothing)
     if isnothing(objective) && length(model.sbml.objectives) == 1
@@ -140,34 +139,56 @@ function A.objective(model::SBMLModel)::A.SparseVec
     return res
 end
 
-A.genes(model::SBMLModel)::Vector{String} = model.gene_ids
-A.n_genes(model::SBMLModel)::Int = length(model.gene_ids)
-A.reaction_gene_association_dnf(
-    model::SBMLModel,
-    rid::String,
-)::Maybe{A.GeneAssociationDNF} =
-    maybemap(parse_grr, model.sbml.reactions[rid].gene_product_association)
+A.genes(model::SBMLFBCModel)::Vector{String} = model.gene_ids
 
+A.n_genes(model::SBMLFBCModel)::Int = length(model.gene_ids)
+
+"""
+$(TYPEDSIGNATURES)
+
+Directly evaluates the `SBML.GeneProductAssociation` boolean formula for the
+reaction.
+"""
 function A.reaction_gene_products_available(
-    model::SBMLModel,
+    model::SBMLFBCModel,
     rid::String,
     available::Function,
-)
+)::Maybe{Bool}
     ev(x::SBML.GPAAnd) = all(ev, x.terms)
     ev(x::SBML.GPAOr) = any(ev, x.terms)
     ev(x::SBML.GPARef) = available(x.gene_product)
 
-    maybemap(ev, model.reaction[rid].gene_product_association)
+    maybemap(ev, model.sbml.reactions[rid].gene_product_association)
 end
 
-A.metabolite_formula(model::SBMLModel, mid::String)::Maybe{A.MetaboliteFormula} =
+"""
+$(TYPEDSIGNATURES)
+
+SBML does not store gene associations in DNF directly; this function converts
+the Boolean formula stored in SBML to DNF.  That is usually safe to do, but the
+complexity is exponential in the worst case, which may easily cause very long
+processing with specific models.
+
+Unless absolutely necessary, use [`reaction_gene_products_available`](@ref)
+instead.
+"""
+A.reaction_gene_association_dnf(
+    model::SBMLFBCModel,
+    rid::String,
+)::Maybe{A.GeneAssociationDNF} =
+    maybemap(parse_grr, model.sbml.reactions[rid].gene_product_association)
+
+
+A.metabolite_formula(model::SBMLFBCModel, mid::String)::Maybe{A.MetaboliteFormula} =
     maybemap(parse_formula, model.sbml.species[mid].formula)
-A.metabolite_compartment(model::SBMLModel, mid::String) =
+
+A.metabolite_compartment(model::SBMLFBCModel, mid::String) =
     model.sbml.species[mid].compartment
-A.metabolite_charge(model::SBMLModel, mid::String)::Maybe{Int} =
+
+A.metabolite_charge(model::SBMLFBCModel, mid::String)::Maybe{Int} =
     model.sbml.species[mid].charge
 
-function A.reaction_stoichiometry(m::SBMLModel, rid::String)::Dict{String,Float64}
+function A.reaction_stoichiometry(m::SBMLFBCModel, rid::String)::Dict{String,Float64}
     s = Dict{String,Float64}()
     default1(x) = isnothing(x) ? 1 : x
     for sr in m.sbml.reactions[rid].reactants
@@ -179,20 +200,28 @@ function A.reaction_stoichiometry(m::SBMLModel, rid::String)::Dict{String,Float6
     return s
 end
 
-A.reaction_name(model::SBMLModel, rid::String) = model.sbml.reactions[rid].name
-A.metabolite_name(model::SBMLModel, mid::String) = model.sbml.species[mid].name
-A.gene_name(model::SBMLModel, gid::String) = model.sbml.gene_products[gid].name
-A.reaction_annotations(model::SBMLModel, rid::String) =
+A.reaction_name(model::SBMLFBCModel, rid::String) = model.sbml.reactions[rid].name
+
+A.metabolite_name(model::SBMLFBCModel, mid::String) = model.sbml.species[mid].name
+
+A.gene_name(model::SBMLFBCModel, gid::String) = model.sbml.gene_products[gid].name
+
+A.reaction_annotations(model::SBMLFBCModel, rid::String) =
     sbml_import_cvterms(model.sbml.reactions[rid].sbo, model.sbml.reactions[rid].cv_terms)
-A.metabolite_annotations(model::SBMLModel, mid::String) =
+
+A.metabolite_annotations(model::SBMLFBCModel, mid::String) =
     sbml_import_cvterms(model.sbml.species[mid].sbo, model.sbml.species[mid].cv_terms)
-A.gene_annotations(model::SBMLModel, gid::String) = sbml_import_cvterms(
+
+A.gene_annotations(model::SBMLFBCModel, gid::String) = sbml_import_cvterms(
     model.sbml.gene_products[gid].sbo,
     model.sbml.gene_products[gid].cv_terms,
 )
-A.reaction_notes(model::SBMLModel, rid::String) =
+
+A.reaction_notes(model::SBMLFBCModel, rid::String) =
     sbml_import_notes(model.sbml.reactions[rid].notes)
-A.metabolite_notes(model::SBMLModel, mid::String) =
+
+A.metabolite_notes(model::SBMLFBCModel, mid::String) =
     sbml_import_notes(model.sbml.species[mid].notes)
-A.gene_notes(model::SBMLModel, gid::String) =
+
+A.gene_notes(model::SBMLFBCModel, gid::String) =
     sbml_import_notes(model.sbml.gene_products[gid].notes)

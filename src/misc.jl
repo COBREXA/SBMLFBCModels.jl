@@ -2,7 +2,7 @@
 """
 $(TYPEDSIGNATURES)
 
-Helper for handling `nothing`s.
+A helper for handling `nothing`s.
 """
 maybemap(fn, x) = isnothing(x) ? nothing : fn(x)
 
@@ -51,12 +51,7 @@ function parse_grr(gpa::SBML.GeneProductAssociation)::A.GeneAssociationDNF
     dnf(x::SBML.GPARef) = [[x.gene_product]]
     dnf(x::SBML.GPAOr) = sortunique(vcat(dnf.(x.terms)...))
     dnf(x::SBML.GPAAnd) = fold_and(dnf.(x.terms))
-    dnf(x) = throw(
-        DomainError(
-            x,
-            "unsupported gene product association contents of type $(typeof(x))",
-        ),
-    )
+
     return dnf(gpa)
 end
 
@@ -65,13 +60,35 @@ $(TYPEDSIGNATURES)
 
 Convert a gene association DNF to the corresponding `SBML.jl` structure.
 """
-function unparse_grr(
-    ::Type{SBML.GeneProductAssociation},
-    x::A.GeneAssociationDNF,
-)::SBML.GeneProductAssociation
+function unparse_grr(x::A.GeneAssociationDNF)::SBML.GeneProductAssociation
     SBML.GPAOr([SBML.GPAAnd([SBML.GPARef(j) for j in i]) for i in x])
 end
 
+"""
+$(TYPEDSIGNATURES)
+
+Parse a formula in format `C2H6O` into a `MetaboliteFormula`, which is
+basically a dictionary of atom counts in the molecule.
+"""
+function parse_formula(f::String)::A.MetaboliteFormula
+    res = Dict{String,Int}()
+    pattern = @r_str "([A-Z][a-z]*)([1-9][0-9]*)?"
+
+    for m in eachmatch(pattern, f)
+        res[m.captures[1]] = isnothing(m.captures[2]) ? 1 : parse(Int, m.captures[2])
+    end
+
+    return res
+end
+
+"""
+$(TYPEDSIGNATURES)
+
+Format `MetaboliteFormula` to `String`.
+"""
+function unparse_formula(f::A.MetaboliteFormula)::String
+    return join(["$elem$n" for (elem, n) in f])
+end
 
 function parse_sbml_identifiers_org_uri(uri::String)::Tuple{String,String}
     m = match(r"^http://identifiers.org/([^/]+)/(.*)$", uri)
@@ -79,7 +96,7 @@ function parse_sbml_identifiers_org_uri(uri::String)::Tuple{String,String}
 end
 
 function sbml_import_cvterms(sbo::Maybe{String}, cvs::Vector{SBML.CVTerm})::A.Annotations
-    res = Annotations()
+    res = A.Annotations()
     isnothing(sbo) || (res["sbo"] = [sbo])
     for cv in cvs
         cv.biological_qualifier == :is || continue
@@ -107,13 +124,20 @@ end
 function sbml_export_sbo(annotations::A.Annotations)::Maybe{String}
     haskey(annotations, "sbo") || return nothing
     if length(annotations["sbo"]) != 1
-        error("Data loss: SBO term is not unique for SBML export: $(annotations["sbo"])")
+        throw(
+            DomainError(
+                annotations["sbo"],
+                "data loss: SBO term is not unique for SBML export",
+            ),
+        )
     end
     return annotations["sbo"][1]
 end
 
 sbml_import_notes(notes::Maybe{String})::A.Notes =
-    isnothing(notes) ? Notes() : Notes("" => [notes])
+    isnothing(notes) ? A.Notes() : A.Notes("" => [notes])
 
 sbml_export_notes(notes::A.Notes)::Maybe{String} =
-    isempty(notes) ? nothing : error("Data loss: notes can not exported to SBML")
+    isempty(notes) ? nothing :
+    collect(keys(notes)) == [""] && length(notes[""]) == 1 ? notes[""][1] :
+    throw(DomainError(notes, "data loss: structured notes can not exported to SBML"))
