@@ -1,5 +1,5 @@
 
-# SBMLFBCModels.jl -- Import and export of SBML flux-based constrained models
+# SBMLFBCModels.jl -- Import and export of SBML flux-balanced constrained models
 
 | Build status |
 |:---:|:---:|
