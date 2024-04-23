@@ -8,7 +8,8 @@
 Package `SBMLFBCModels.jl` defines an instance of the `AbstractFBCModel`
 interface (from package
 [AbstractFBCModels.jl](https://github.com/COBREXA/AbstractFBCModels.jl)) atop
-of the SBML Model structure (defined by [SBML.jl]()). This allows you to easily
+of the SBML Model structure (defined by
+[SBML.jl](https://github.com/LCSB-BioCore/SBML.jl)). This allows you to easily
 use the SBML models in constraint-based modeling packages, and convert them to
 other constraint-based metabolic modeling data formats.
 
@@ -25,6 +26,10 @@ import SBMLFBCModels
 
 model = M.load("my_model.xml")
 ```
+
+Documentation of
+[AbstractFBCModels.jl](https://github.com/COBREXA/AbstractFBCModels.jl)
+provides details on the use of the loaded model.
 
 #### Acknowledgements
 
