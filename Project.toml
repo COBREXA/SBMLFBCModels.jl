@@ -1,7 +1,7 @@
 name = "SBMLFBCModels"
 uuid = "3e8f9d1a-ffc1-486d-82d6-6c7276635980"
 authors = ["The authors of SBMLFBCModels.jl"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 AbstractFBCModels = "5a4f3dfa-1789-40f8-8221-69268c29937c"
