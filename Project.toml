@@ -1,7 +1,7 @@
 name = "SBMLFBCModels"
 uuid = "3e8f9d1a-ffc1-486d-82d6-6c7276635980"
 authors = ["The authors of SBMLFBCModels.jl"]
-version = "0.1.1"
+version = "1.0.0"
 
 [deps]
 AbstractFBCModels = "5a4f3dfa-1789-40f8-8221-69268c29937c"
@@ -10,7 +10,7 @@ SBML = "e5567a89-2604-4b09-9718-f5f78e97c3bb"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]
-AbstractFBCModels = "0.1, 0.2, 0.3"
+AbstractFBCModels = "1"
 DocStringExtensions = "0.8, 0.9"
 SBML = "1.5"
 SparseArrays = "1"
