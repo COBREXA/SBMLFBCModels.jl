@@ -4,4 +4,4 @@ A.load(::Type{SBMLFBCModel}, file_name::String)::SBMLFBCModel =
 
 A.save(model::SBMLFBCModel, file_name::String) = SBML.writeSBML(model.sbml, file_name)
 
-A.filename_extensions(::Type{SBMLFBCModel}) = ["xml"]
+A.filename_extensions(::Type{SBMLFBCModel}) = ["xml", "sbml"]
