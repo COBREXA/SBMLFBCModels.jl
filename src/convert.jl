@@ -74,8 +74,8 @@ function Base.convert(::Type{SBMLFBCModel}, mm::A.AbstractFBCModel)
                     lower_bound = bound_params[lbs[ri]],
                     upper_bound = bound_params[ubs[ri]],
                     gene_product_association = maybemap(
-                        unparse_grr,
-                        map(gs -> map(gprid, gs), A.reaction_gene_association_dnf(mm, rid)),
+                        gss -> unparse_grr(map(gs -> map(gprid, gs), gss)),
+                        A.reaction_gene_association_dnf(mm, rid),
                     ),
                     reversible = true,
                     sbo = sbml_export_sbo(A.reaction_annotations(mm, rid)),
