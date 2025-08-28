@@ -61,7 +61,9 @@ $(TYPEDSIGNATURES)
 Convert a gene association DNF to the corresponding `SBML.jl` structure.
 """
 function unparse_grr(x::A.GeneAssociationDNF)::SBML.GeneProductAssociation
-    SBML.GPAOr([SBML.GPAAnd([SBML.GPARef(j) for j in i]) for i in x])
+    or(x) = length(x) <= 1 ? x : SBML.GPAOr(x)
+    and(x) = length(x) <= 1 ? x : SBML.GPAAnd(x)
+    or([and([SBML.GPARef(j) for j in i]) for i in x])
 end
 
 """
