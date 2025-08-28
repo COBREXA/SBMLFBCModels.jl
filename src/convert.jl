@@ -51,7 +51,7 @@ function Base.convert(::Type{SBMLFBCModel}, mm::A.AbstractFBCModel)
                     cv_terms = sbml_export_cvterms(A.metabolite_annotations(mm, mid)),
                 ) for (mi, mid) in enumerate(mets)
             ),
-            parameters = Dict(p => SBML.Parameter(value = v) for (v,p) in bound_params),
+            parameters = Dict(p => SBML.Parameter(value = v) for (v, p) in bound_params),
             reactions = Dict(
                 rxnid(rid) => SBML.Reaction(
                     name = A.reaction_name(mm, rid),
