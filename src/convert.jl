@@ -25,6 +25,12 @@ function Base.convert(::Type{SBMLFBCModel}, mm::A.AbstractFBCModel)
     rxnid(x) = startswith(x, "R_") ? x : "R_$x"
     gprid(x) = startswith(x, "G_") ? x : "G_$x"
 
+    bound_params = Dict{Float64,String}()
+    for b in [lbs; ubs]
+        haskey(bound_params, b) && continue
+        bound_params[b] = "bound_value_$(length(bound_params)+1)"
+    end
+
     return SBMLFBCModel(
         SBML.Model(
             compartments = Dict(
@@ -45,6 +51,7 @@ function Base.convert(::Type{SBMLFBCModel}, mm::A.AbstractFBCModel)
                     cv_terms = sbml_export_cvterms(A.metabolite_annotations(mm, mid)),
                 ) for (mi, mid) in enumerate(mets)
             ),
+            parameters = Dict(p => SBML.Parameter(value = v) for (v,p) in bound_params),
             reactions = Dict(
                 rxnid(rid) => SBML.Reaction(
                     name = A.reaction_name(mm, rid),
@@ -64,12 +71,8 @@ function Base.convert(::Type{SBMLFBCModel}, mm::A.AbstractFBCModel)
                         ) for
                         i in SparseArrays.nonzeroinds(stoi[:, ri]) if stoi[i, ri] > 0
                     ],
-                    kinetic_parameters = Dict(
-                        "LOWER_BOUND" => SBML.Parameter(value = lbs[ri]),
-                        "UPPER_BOUND" => SBML.Parameter(value = ubs[ri]),
-                    ),
-                    lower_bound = "LOWER_BOUND",
-                    upper_bound = "UPPER_BOUND",
+                    lower_bound = bound_params[lbs[ri]],
+                    upper_bound = bound_params[ubs[ri]],
                     gene_product_association = maybemap(
                         unparse_grr,
                         A.reaction_gene_association_dnf(mm, rid),
