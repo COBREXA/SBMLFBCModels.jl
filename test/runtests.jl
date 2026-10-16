@@ -33,7 +33,13 @@ using Test
     ]
         path = joinpath(modeldir, "$name.xml")
         A.download_data_file(url, path, hash)
-        A.run_fbcmodel_file_tests(SBMLFBCModel, path; name, test_save = ts)
+        A.run_fbcmodel_file_tests(
+            SBMLFBCModel,
+            path;
+            name,
+            test_save = ts,
+            test_strings = ts,
+        )
     end
 
     include("misc.jl")
